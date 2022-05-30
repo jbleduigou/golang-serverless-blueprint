@@ -8,6 +8,7 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"go.uber.org/zap"
 )
 
 var (
@@ -22,28 +23,32 @@ var (
 )
 
 func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	fmt.Println("Received request")
+	logger, _ := zap.NewProduction()
+	defer logger.Sync()
+	logger.Debug("Received request")
 	resp, err := http.Get(DefaultHTTPGetAddress)
 	if err != nil {
+		logger.Error("Error while getting ip address", zap.Error(err))
 		return events.APIGatewayProxyResponse{}, err
 	}
 
 	if resp.StatusCode != 200 {
+		logger.Error("Unexpected status code while getting ip address", zap.Int("status", resp.StatusCode))
 		return events.APIGatewayProxyResponse{}, ErrNon200Response
 	}
 
 	ip, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Printf("Unexpected error: %v\n", err)
+		logger.Error("Error while reading response", zap.Error(err))
 		return events.APIGatewayProxyResponse{}, err
 	}
 
 	if len(ip) == 0 {
-		fmt.Println("Error: no IP found")
+		logger.Warn("No IP address found")
 		return events.APIGatewayProxyResponse{}, ErrNoIP
 	}
 
-	fmt.Println("Sending response")
+	logger.Info("Sending response")
 	return events.APIGatewayProxyResponse{
 		Body:       fmt.Sprintf("Hello, %v", string(ip)),
 		StatusCode: 200,
