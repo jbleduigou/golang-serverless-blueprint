@@ -22,6 +22,7 @@ var (
 )
 
 func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	fmt.Println("Received request")
 	resp, err := http.Get(DefaultHTTPGetAddress)
 	if err != nil {
 		return events.APIGatewayProxyResponse{}, err
@@ -33,13 +34,16 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 
 	ip, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
+		fmt.Printf("Unexpected error: %v\n", err)
 		return events.APIGatewayProxyResponse{}, err
 	}
 
 	if len(ip) == 0 {
+		fmt.Println("Error: no IP found")
 		return events.APIGatewayProxyResponse{}, ErrNoIP
 	}
 
+	fmt.Println("Sending response")
 	return events.APIGatewayProxyResponse{
 		Body:       fmt.Sprintf("Hello, %v", string(ip)),
 		StatusCode: 200,
