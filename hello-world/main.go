@@ -58,7 +58,8 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 		return events.APIGatewayProxyResponse{}, ErrNoIP
 	}
 
-	logger.Info("Sending response")
+	logger.Info("Sending response",
+		zap.String("ip-address", string(ip)))
 	return events.APIGatewayProxyResponse{
 		Body:       fmt.Sprintf("Hello, %v", string(ip)),
 		StatusCode: 200,
