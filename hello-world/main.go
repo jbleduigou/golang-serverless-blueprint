@@ -23,7 +23,11 @@ var (
 )
 
 func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	logger, _ := zap.NewProduction()
+	cfg := zap.Config{
+		Encoding: "json",
+		Level:    zap.NewAtomicLevelAt(zap.DebugLevel),
+	}
+	logger, _ := cfg.Build()
 	defer logger.Sync()
 	logger.Debug("Received request")
 	resp, err := http.Get(DefaultHTTPGetAddress)
