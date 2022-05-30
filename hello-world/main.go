@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-lambda-go/lambdacontext"
 	"go.uber.org/zap"
 )
 
@@ -22,10 +24,14 @@ var (
 	ErrNon200Response = errors.New("Non 200 Response found")
 )
 
-func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	// Retrieve AWS Request ID
+	lc, _ := lambdacontext.FromContext(ctx)
+	requestID := lc.AwsRequestID
 	cfg := zap.Config{
-		Encoding: "json",
-		Level:    zap.NewAtomicLevelAt(zap.DebugLevel),
+		Encoding:      "json",
+		Level:         zap.NewAtomicLevelAt(zap.DebugLevel),
+		InitialFields: map[string]interface{}{"request-id": requestID},
 	}
 	logger, _ := cfg.Build()
 	defer logger.Sync()
