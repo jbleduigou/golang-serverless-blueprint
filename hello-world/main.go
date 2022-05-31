@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-lambda-go/lambdacontext"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 var (
@@ -29,8 +31,22 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 	lc, _ := lambdacontext.FromContext(ctx)
 	requestID := lc.AwsRequestID
 	cfg := zap.Config{
-		Encoding:      "json",
-		Level:         zap.NewAtomicLevelAt(zap.DebugLevel),
+		Encoding:         "json",
+		Level:            zap.NewAtomicLevelAt(getLogLevel()),
+		OutputPaths:      []string{"stdout"},
+		ErrorOutputPaths: []string{"stderr"},
+		EncoderConfig: zapcore.EncoderConfig{
+			MessageKey: "message",
+
+			LevelKey:    "level",
+			EncodeLevel: zapcore.CapitalLevelEncoder,
+
+			TimeKey:    "time",
+			EncodeTime: zapcore.ISO8601TimeEncoder,
+
+			CallerKey:    "caller",
+			EncodeCaller: zapcore.ShortCallerEncoder,
+		},
 		InitialFields: map[string]interface{}{"request-id": requestID},
 	}
 	logger, _ := cfg.Build()
@@ -64,6 +80,24 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 		Body:       fmt.Sprintf("Hello, %v", string(ip)),
 		StatusCode: 200,
 	}, nil
+}
+
+func getLogLevel() zapcore.Level {
+	lvl, found := os.LookupEnv("LOG_LEVEL")
+	if found {
+		var l zapcore.Level
+		if err := l.Set(lvl); err == nil {
+			return l
+		}
+	}
+	env := os.Getenv("ENVIRONMENT")
+	if env == "dev" {
+		return zap.DebugLevel
+	}
+	if env == "staging" {
+		return zap.InfoLevel
+	}
+	return zap.WarnLevel
 }
 
 func main() {
