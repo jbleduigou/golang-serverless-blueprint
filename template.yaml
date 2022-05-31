@@ -31,6 +31,13 @@ Resources:
         Variables:
           PARAM1: VALUE
 
+  LambdaLogGroup:
+        Type: AWS::Logs::LogGroup
+        DependsOn: [ HelloWorldFunction ]
+        Properties:
+              RetentionInDays: 3
+              LogGroupName: !Join ['', ['/aws/lambda/', !Ref HelloWorldFunction]]
+
   AccessLoggedApi:
     Type: AWS::Serverless::Api
     Properties:
@@ -42,6 +49,7 @@ Resources:
   AccessLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
+          RetentionInDays: 3
           LogGroupName: !Join ['', ['/aws/apigateway/', !Ref AWS::StackName]]
 
 Outputs:
